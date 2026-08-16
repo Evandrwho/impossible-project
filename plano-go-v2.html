@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go Sênior — Projeto Impossível: Mini-Netflix</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080c10;
+  --panel: #0d1318;
+  --card: #111920;
+  --card2: #151e27;
+  --border: #1a2535;
+  --border2: #223044;
+  --go: #00acd7;
+  --go-dim: rgba(0,172,215,0.13);
+  --green: #3dd68c;
+  --green-dim: rgba(61,214,140,0.11);
+  --orange: #f4803a;
+  --orange-dim: rgba(244,128,58,0.11);
+  --purple: #9d7aff;
+  --yellow: #f0c040;
+  --text: #c0d0e0;
+  --text-dim: #405870;
+  --text-mid: #6a8aaa;
+  --white: #e4f0fa;
+  --r: 7px;
+}
+body { background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; min-height:100vh; display:flex; flex-direction:column; }
+
+/* HEADER */
+header { background:var(--panel); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+.header-top { display:flex; align-items:center; justify-content:space-between; padding:18px 28px 14px; gap:16px; flex-wrap:wrap; }
+.brand { display:flex; align-items:center; gap:10px; }
+.go-chip { background:var(--go); color:#000; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:12px; padding:5px 10px; border-radius:5px; }
+.brand-info h1 { font-size:14px; font-weight:600; color:var(--white); }
+.brand-info p { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-top:1px; }
+.hprog { display:flex; align-items:center; gap:10px; }
+.hprog-label { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+.hprog-label span { color:var(--green); font-weight:700; }
+.hbar { width:120px; height:4px; background:var(--border); border-radius:99px; overflow:hidden; }
+.hbar-fill { height:100%; background:linear-gradient(90deg,var(--go),var(--green)); border-radius:99px; transition:width .5s ease; width:0%; }
+
+/* TABS */
+.tabs-wrap { overflow-x:auto; scrollbar-width:none; }
+.tabs-wrap::-webkit-scrollbar { display:none; }
+.tabs { display:flex; min-width:max-content; padding:0 28px; gap:2px; }
+.tab { display:flex; align-items:center; gap:7px; padding:11px 16px; border:none; background:transparent; color:var(--text-dim); font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s; white-space:nowrap; }
+.tab:hover { color:var(--text-mid); }
+.tab.active { color:var(--white); border-bottom-color:var(--go); }
+.tab.done .tnum { background:var(--green); border-color:var(--green); color:#000; }
+.tab.active .tnum { border-color:var(--go); color:var(--go); }
+.tnum { width:17px; height:17px; border-radius:50%; border:1.5px solid var(--border2); font-size:9px; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-dim); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; }
+
+/* MAIN */
+main { flex:1; max-width:820px; width:100%; margin:0 auto; padding:28px 28px 64px; }
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* MODULE HEADER */
+.mhead { display:flex; gap:14px; align-items:flex-start; margin-bottom:24px; }
+.micon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.ic-go     { background:rgba(0,172,215,.12); }
+.ic-green  { background:rgba(61,214,140,.12); }
+.ic-orange { background:rgba(244,128,58,.12); }
+.ic-purple { background:rgba(157,122,255,.12); }
+.ic-yellow { background:rgba(240,192,64,.12); }
+.meyebrow { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+.mtitle { font-size:20px; font-weight:700; color:var(--white); letter-spacing:-.4px; margin-bottom:5px; }
+.mdesc { font-size:12px; color:var(--text-mid); line-height:1.7; }
+.mbadges { display:flex; gap:7px; margin-top:7px; flex-wrap:wrap; }
+.badge { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 9px; border-radius:4px; font-weight:600; letter-spacing:.5px; }
+.bw { background:rgba(255,255,255,.05); color:var(--text-mid); }
+.bhard { background:var(--orange-dim); color:var(--orange); }
+.bmed { background:var(--go-dim); color:var(--go); }
+.bexp { background:rgba(157,122,255,.12); color:var(--purple); }
+
+/* MODULE PROGRESS */
+.mprog-wrap { margin-bottom:24px; }
+.mprog-top { display:flex; justify-content:space-between; margin-bottom:6px; }
+.mprog-top span { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.mprog-top .mpct { color:var(--go); font-weight:700; }
+.mbar { height:5px; background:var(--border); border-radius:99px; overflow:hidden; }
+.mbar-fill { height:100%; background:linear-gradient(90deg,var(--go),var(--green)); border-radius:99px; transition:width .35s ease; }
+
+/* SECTION LABEL */
+.slabel { font-size:10px; font-family:'JetBrains Mono',monospace; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; padding-bottom:7px; border-bottom:1px solid var(--border); }
+
+/* PROBLEM NARRATIVE */
+.problem-box { background:var(--card); border:1px solid var(--border2); border-left:3px solid var(--purple); border-radius:var(--r); padding:18px 20px; margin-bottom:22px; }
+.problem-box .slabel { color:var(--purple); border-color:rgba(157,122,255,.2); }
+.problem-title { font-size:14px; font-weight:600; color:var(--white); margin-bottom:10px; }
+.problem-body { font-size:12px; color:var(--text-mid); line-height:1.9; }
+.problem-body strong { color:var(--text); }
+.problem-body .highlight { color:var(--orange); font-weight:600; }
+
+/* TERM — glossário via tooltip no hover */
+.term { position:relative; color:var(--purple); border-bottom:1.5px dotted rgba(157,122,255,.5); cursor:help; }
+.term::after {
+  content: attr(data-tip);
+  position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(4px);
+  width:min(260px,80vw); background:var(--card2); border:1px solid var(--border2); border-radius:7px;
+  padding:10px 12px; font-size:11px; line-height:1.65; color:var(--text); font-weight:400; text-align:left;
+  box-shadow:0 10px 28px rgba(0,0,0,.5); opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease; z-index:80; white-space:normal;
+}
+.term::before {
+  content:''; position:absolute; left:50%; bottom:calc(100% + 3px); transform:translateX(-50%);
+  border:6px solid transparent; border-top-color:var(--border2); opacity:0; visibility:hidden;
+  transition:opacity .15s ease; z-index:81;
+}
+.term:hover::after, .term:focus-visible::after,
+.term:hover::before, .term:focus-visible::before { opacity:1; visibility:visible; transform:translateX(-50%) translateY(0); }
+.term:focus-visible { outline:1.5px solid var(--purple); outline-offset:2px; border-radius:2px; }
+
+/* COMPARE — jeito errado vs jeito certo */
+.compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px; }
+.compare-card { border-radius:var(--r); padding:15px 17px; border:1px solid var(--border2); background:var(--card); }
+.compare-wrong { border-left:3px solid var(--orange); }
+.compare-right { border-left:3px solid var(--green); }
+.compare-label { font-size:10px; font-family:'JetBrains Mono',monospace; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:9px; font-weight:700; display:flex; align-items:center; gap:6px; }
+.compare-wrong .compare-label { color:var(--orange); }
+.compare-right .compare-label { color:var(--green); }
+.compare-title { font-size:12.5px; font-weight:600; color:var(--white); margin-bottom:8px; line-height:1.5; }
+.compare-body { font-size:11.5px; color:var(--text-mid); line-height:1.8; }
+.compare-body strong { color:var(--text); }
+@media(max-width:640px){ .compare-grid{grid-template-columns:1fr;} }
+
+/* CHECKLIST */
+.checklist { display:flex; flex-direction:column; gap:2px; margin-bottom:22px; }
+.ci { display:flex; align-items:flex-start; gap:11px; padding:11px 13px; border-radius:var(--r); cursor:pointer; border:1px solid transparent; transition:background .1s; user-select:none; }
+.ci:hover { background:rgba(255,255,255,.025); }
+.ci.checked { background:var(--green-dim); border-color:rgba(61,214,140,.13); }
+.cbox { width:17px; height:17px; border:1.5px solid var(--border2); border-radius:4px; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.ci.checked .cbox { background:var(--green); border-color:var(--green); }
+.ccheck { font-size:10px; opacity:0; transition:opacity .15s; }
+.ci.checked .ccheck { opacity:1; }
+.ctext { font-size:12px; color:var(--text); line-height:1.65; flex:1; }
+.ci.checked .ctext { color:var(--text-dim); text-decoration:line-through; text-decoration-color:rgba(61,214,140,.35); }
+code { font-family:'JetBrains Mono',monospace; font-size:11px; background:rgba(0,172,215,.1); color:var(--go); padding:1px 5px; border-radius:3px; }
+
+/* HOW TO — steps */
+.howto { margin-bottom:22px; }
+.step { border:1px solid var(--border); border-radius:var(--r); overflow:hidden; margin-bottom:6px; }
+.step-header { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; background:var(--card); transition:background .12s; }
+.step-header:hover { background:var(--card2); }
+.step-num { width:26px; height:26px; background:var(--go-dim); border:1px solid rgba(0,172,215,.25); border-radius:5px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:var(--go); flex-shrink:0; }
+.step-title { font-size:13px; font-weight:600; color:var(--white); flex:1; }
+.step-time { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text-dim); background:rgba(255,255,255,.04); padding:2px 8px; border-radius:3px; white-space:nowrap; }
+.step-arrow { font-size:11px; color:var(--text-dim); transition:transform .2s; flex-shrink:0; }
+.step.open .step-arrow { transform:rotate(90deg); }
+.step-body { display:none; padding:14px 16px 16px 54px; background:var(--card2); border-top:1px solid var(--border); }
+.step.open .step-body { display:block; }
+.step-desc { font-size:12px; color:var(--text-mid); line-height:1.85; margin-bottom:10px; }
+.step-done-box { background:rgba(61,214,140,.07); border:1px solid rgba(61,214,140,.15); border-radius:5px; padding:8px 12px; }
+.step-done-label { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--green); letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
+.step-done-text { font-size:11px; color:var(--text-mid); line-height:1.6; }
+
+/* CHALLENGE */
+.challenge { background:var(--card); border:1px solid var(--border2); border-left:3px solid var(--orange); border-radius:var(--r); padding:16px 18px; margin-bottom:22px; }
+.challenge .slabel { color:var(--orange); border-color:rgba(244,128,58,.2); }
+.ch-head { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+.ch-title { font-size:13px; font-weight:600; color:var(--white); flex:1; }
+.ch-time { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--orange); background:var(--orange-dim); padding:2px 8px; border-radius:3px; }
+.ch-body { font-size:12px; color:var(--text-mid); line-height:1.85; }
+.ch-body strong { color:var(--white); }
+
+/* RESOURCES */
+.resources { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:22px; }
+.res { font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text-mid); background:var(--card); border:1px solid var(--border2); padding:4px 11px; border-radius:4px; transition:color .15s,border-color .15s; cursor:default; }
+.res:hover { color:var(--go); border-color:rgba(0,172,215,.4); }
+
+/* DONE BTN */
+.btn-done { width:100%; padding:13px; border:1px solid var(--border2); border-radius:var(--r); background:transparent; color:var(--text-mid); font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .15s; }
+.btn-done:hover { border-color:var(--green); color:var(--green); background:var(--green-dim); }
+.btn-done.done { border-color:var(--green); background:var(--green-dim); color:var(--green); }
+
+/* NAV */
+.mnav { display:flex; justify-content:space-between; gap:10px; margin-top:28px; padding-top:20px; border-top:1px solid var(--border); }
+.nbtn { display:flex; align-items:center; gap:7px; padding:9px 16px; border:1px solid var(--border2); border-radius:var(--r); background:transparent; color:var(--text-mid); font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
+.nbtn:hover { border-color:var(--go); color:var(--go); }
+.nbtn:disabled { opacity:.3; cursor:default; pointer-events:none; }
+
+/* CONGRATS */
+.congrats { display:none; text-align:center; padding:80px 32px; }
+.congrats.show { display:block; }
+.congrats-emoji { font-size:56px; margin-bottom:16px; }
+.congrats-title { font-size:26px; font-weight:700; color:var(--white); margin-bottom:8px; }
+.congrats-sub { font-size:13px; color:var(--text-mid); line-height:1.8; }
+
+@media(max-width:600px){
+  .header-top{padding:14px 16px 10px;}
+  main{padding:20px 16px 48px;}
+  .tabs{padding:0 16px;}
+  .hbar{width:80px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="brand">
+      <div class="go-chip">Go</div>
+      <div class="brand-info">
+        <h1>Plano de Estudos · Go Sênior</h1>
+        <p>Projeto Impossível: streaming em escala Netflix</p>
+      </div>
+    </div>
+    <div class="hprog">
+      <span class="hprog-label">Geral: <span id="gpct">0%</span></span>
+      <div class="hbar"><div class="hbar-fill" id="gbar"></div></div>
+    </div>
+  </div>
+  <div class="tabs-wrap">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-t="0"><span>⚡</span><span>Concorrência</span><span class="tnum">1</span></button>
+      <button class="tab" data-t="1"><span>📊</span><span>Performance</span><span class="tnum">2</span></button>
+      <button class="tab" data-t="2"><span>🔗</span><span>gRPC</span><span class="tnum">3</span></button>
+      <button class="tab" data-t="3"><span>📨</span><span>Kafka</span><span class="tnum">4</span></button>
+      <button class="tab" data-t="4"><span>🐳</span><span>K8s</span><span class="tnum">5</span></button>
+      <button class="tab" data-t="5"><span>🧩</span><span>Distribuído</span><span class="tnum">6</span></button>
+      <button class="tab" data-t="6"><span>🔧</span><span>Go Idioms</span><span class="tnum">7</span></button>
+      <button class="tab" data-t="7"><span>🧪</span><span>Testes</span><span class="tnum">8</span></button>
+      <button class="tab" data-t="8"><span>🚀</span><span>Projeto Final</span><span class="tnum">9</span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ═══════════════════════════════════════════
+     01 · CONCORRÊNCIA
+════════════════════════════════════════════ -->
+<div class="panel active" id="p0">
+  <div class="mhead">
+    <div class="micon ic-go">⚡</div>
+    <div>
+      <div class="meyebrow">Módulo 01</div>
+      <div class="mtitle">Concorrência em Go</div>
+      <div class="mdesc">Goroutines, channels, select — com garantias reais de produção, não tutorial.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 1–2</span><span class="badge bhard">Prioridade máxima</span></div>
+    </div>
+  </div>
+
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct0">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar0"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">Ingest de conteúdo: por que um worker pool? O que quebra sem ele?</div>
+    <div class="problem-body">
+      Você trabalha no <span class="term" data-tip="Serviço que recebe os arquivos de vídeo enviados pelos estúdios e prepara tudo pra virar um título assistível: converte, valida qualidade e libera pro catálogo." tabindex="0">ingest-service</span> da Netflix. Todo <span class="term" data-tip="O arquivo de vídeo original em altíssima qualidade, entregue pelo estúdio — o 'arquivo-fonte' antes de qualquer compressão. É a partir dele que todas as versões finais são geradas." tabindex="0">master do episódio</span> que chega de um estúdio precisa ser transcodificado em ~20 <span class="term" data-tip="Cada versão comprimida e pronta pra entrega de um mesmo vídeo — uma combinação específica de codec, resolução e bitrate (ex: AV1 1080p 4Mbps). O player escolhe qual rendition baixar de acordo com a conexão do usuário." tabindex="0">renditions</span> — combinações de <span class="term" data-tip="Algoritmo que comprime o vídeo pra ocupar menos espaço/banda. H.264 é o mais compatível, AV1 é mais eficiente mas exige mais poder de processamento pra codificar." tabindex="0">codec</span> (H.264, VP9, AV1), resolução (480p a 4K) e bitrate, formando a <span class="term" data-tip="O conjunto ordenado de renditions de um título, do mais leve ao mais pesado. É o que permite o player trocar de qualidade automaticamente conforme a internet do usuário oscila." tabindex="0">bitrate ladder</span> que decide o que cada dispositivo do mundo vai realmente reproduzir. Sem isso, não existe título publicável no catálogo.<br><br>
+      Em dia normal, chega 1 título por vez, e cada rendition é uma goroutine: <code>go transcode(rendition)</code>. Funciona. O código parece elegante.<br><br>
+      Aí chega o <span class="highlight">drop de uma temporada inteira</span> de uma vez — 10 episódios × 20 renditions = 200 encodes simultâneos disparados no mesmo instante. Ou pior: a engenharia decide migrar o catálogo inteiro pra AV1 e libera um job de re-encode em massa. <strong>Cada goroutine de encode segura buffers de frame gigantes na memória.</strong> Milhares delas ao mesmo tempo saturam CPU e RAM do nó, o pod é morto por OOMKill no meio de dezenas de encodes, e o ingest pipeline trava pra todo mundo — inclusive pro conteúdo que nem tinha nada a ver com a migração.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">Uma goroutine por rendition, sem limite</div>
+      <div class="compare-body">
+        <code>go transcode(r)</code> pra cada uma das 20 renditions de cada título. Sem fila, sem teto. Num drop de temporada ou numa migração de codec em massa, o número de goroutines explode junto com o número de títulos — <strong>o paralelismo do sistema é decidido por quem manda os jobs, não por quanto o nó aguenta.</strong>
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">Worker pool com N fixo + fila</div>
+      <div class="compare-body">
+        Um número fixo de workers (dimensionado pelos cores do nó de encode) consome jobs de um channel. Se todos estão ocupados, o job espera na fila — <strong>não nasce goroutine nova.</strong> Memória e CPU ficam previsíveis mesmo com 10 ou 10.000 renditions na fila, e <code>context</code> + shutdown gracioso garante que encodes em andamento terminam antes do nó ser drenado.
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l0">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Modelo de memória do Go — <code>happens-before</code> e sincronização implícita entre goroutines</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>sync.Mutex</code>, <code>sync.RWMutex</code>, <code>sync.WaitGroup</code>, <code>sync.Once</code> — quando cada um faz sentido</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Buffered vs unbuffered channels — diferença de semântica e backpressure implícito</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Padrões Fan-out / Fan-in para distribuir e coletar trabalho entre goroutines</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>select</code> com <code>default</code>, timeout via <code>time.After</code> e <code>context.WithTimeout</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Goroutine leaks — como surgem (channel nunca fechado, context ignorado), detectar com <code>goleak</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Context propagation — cancelamento e deadline se propagam pelo grafo de goroutines</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>errgroup</code> (golang.org/x/sync) — concorrência com tratamento de erro estruturado</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h0">
+
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div>
+        <div class="step-title">Definir as structs: EncodeJob, EncodeResult e o Worker</div>
+        <div class="step-time">~1h</div>
+        <div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          Crie o arquivo <code>pool.go</code>. Defina a struct <code>EncodeJob</code> com campos <code>TitleID string</code>, <code>Codec string</code> e <code>Resolution string</code> (a rendition a gerar). Defina <code>EncodeResult</code> com <code>TitleID string</code>, <code>OutputPath string</code> e <code>Err error</code>. Crie a função <code>worker(id int, jobs &lt;-chan EncodeJob, results chan&lt;- EncodeResult, ctx context.Context)</code> com um loop <code>for</code> que usa <code>select</code> para receber do channel <code>jobs</code> ou detectar cancelamento via <code>ctx.Done()</code>. Por enquanto, o encode pode ser um <code>time.Sleep</code> aleatório de 50–500ms simulando o trabalho real de transcodificação.
+        </div>
+        <div class="step-done-box">
+          <div class="step-done-label">✓ Critério de conclusão</div>
+          <div class="step-done-text">Você consegue compilar o arquivo sem erros. A função <code>worker</code> existe e recebe os tipos corretos nos channels.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div>
+        <div class="step-title">Criar o Pool: inicializar N encoders com WaitGroup</div>
+        <div class="step-time">~1h</div>
+        <div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          Crie a função <code>NewPool(ctx context.Context, numWorkers int) (chan&lt;- EncodeJob, &lt;-chan EncodeResult)</code>. Dentro, crie <code>jobs := make(chan EncodeJob, 100)</code> e <code>results := make(chan EncodeResult, 100)</code>. Use um <code>sync.WaitGroup</code> para lançar <code>numWorkers</code> goroutines chamando <code>worker(...)</code> — <code>numWorkers</code> deve refletir os cores disponíveis no nó de encode, não um número arbitrário. Inicie uma goroutine adicional que faz <code>wg.Wait()</code> e depois fecha o channel <code>results</code>. Isso sinaliza ao consumidor que não virão mais renditions prontas.
+        </div>
+        <div class="step-done-box">
+          <div class="step-done-label">✓ Critério de conclusão</div>
+          <div class="step-done-text">No <code>main.go</code>, você consegue chamar <code>NewPool(ctx, 5)</code>, enviar 20 <code>EncodeJob</code> (as renditions de um título), e receber 20 resultados no range do channel results antes de ele fechar.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div>
+        <div class="step-title">Adicionar Rate Limiting com time.Ticker</div>
+        <div class="step-time">~1h</div>
+        <div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          Num drop de temporada inteira, centenas de jobs chegam de uma vez — mas o storage compartilhado onde as renditions são escritas tem um teto de throughput. O pool agora deve despachar no máximo N jobs por segundo. Crie um <code>ticker := time.NewTicker(time.Second / time.Duration(ratePerSec))</code>. No produtor (quem envia jobs), antes de enviar ao channel, faça <code>select { case &lt;-ticker.C: }</code> — isso garante que você só despacha um job quando o ticker "libera". Se o contexto cancelar, quebre o loop. Lembre de chamar <code>ticker.Stop()</code> no defer.
+        </div>
+        <div class="step-done-box">
+          <div class="step-done-label">✓ Critério de conclusão</div>
+          <div class="step-done-text">Com rate de 10/seg e 50 jobs (2,5 episódios), o processamento leva ~5 segundos. Você pode medir com <code>time.Now()</code> antes e depois do envio.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div>
+        <div class="step-title">Implementar cancelamento gracioso com context</div>
+        <div class="step-time">~1h</div>
+        <div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          O autoscaler do cluster pode decidir drenar um nó de encode a qualquer momento. No <code>main.go</code>, crie um contexto que cancela ao receber <code>os.Signal</code> (SIGTERM/SIGINT): use <code>signal.NotifyContext(context.Background(), os.Interrupt)</code>. Passe esse contexto para o pool. Rode o programa, envie 100 <code>EncodeJob</code>, aperte Ctrl+C no meio. Os workers em andamento devem terminar o encode atual (não abortar um vídeo pela metade) antes do programa encerrar limpo.
+        </div>
+        <div class="step-done-box">
+          <div class="step-done-label">✓ Critério de conclusão</div>
+          <div class="step-done-text">Ctrl+C durante execução → workers terminam a rendition atual → programa encerra sem panic → você vê "shutdown gracioso" no log.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">5</div>
+        <div class="step-title">Validar zero goroutine leaks com goleak</div>
+        <div class="step-time">~1h</div>
+        <div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          Instale <code>go get go.uber.org/goleak</code>. No arquivo de teste, adicione <code>defer goleak.VerifyNone(t)</code> como primeira linha. Escreva um teste que cria o pool com 5 workers, envia 20 <code>EncodeJob</code> (as renditions de um título), aguarda todos os resultados e cancela o contexto. O <code>goleak</code> vai falhar se qualquer goroutine continuar rodando após o teste. Corrija quaisquer leaks: canal não fechado, context não propagado, goroutine que ignora <code>ctx.Done()</code>. Rode também com <code>go test -race ./...</code>.
+        </div>
+        <div class="step-done-box">
+          <div class="step-done-label">✓ Critério de conclusão</div>
+          <div class="step-done-text"><code>go test -race ./...</code> passa verde. <code>goleak.VerifyNone</code> não reporta nenhuma goroutine vazando.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">The Go Memory Model (go.dev)</span>
+    <span class="res">Go Concurrency Patterns — Rob Pike (YouTube)</span>
+    <span class="res">Concurrency in Go — Cox-Buday (livro)</span>
+    <span class="res">uber-go/goleak (GitHub)</span>
+    <span class="res">golang.org/x/sync/errgroup</span>
+    <span class="res">Netflix Tech Blog — Video Encoding at Scale</span>
+  </div>
+
+  <button class="btn-done" id="d0" onclick="markDone(0)">Marcar módulo como concluído ✓</button>
+  <div class="mnav">
+    <button class="nbtn" disabled>← Anterior</button>
+    <button class="nbtn" onclick="goTab(1)">Performance →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     02 · PERFORMANCE
+════════════════════════════════════════════ -->
+<div class="panel" id="p1">
+  <div class="mhead">
+    <div class="micon ic-orange">📊</div>
+    <div>
+      <div class="meyebrow">Módulo 02</div>
+      <div class="mtitle">Performance & Análise de Memória</div>
+      <div class="mdesc">pprof, flame graphs, escape analysis. O que separa sênior de pleno em Go.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 2–3</span><span class="badge bexp">Expert</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct1">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar1"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">recommendation-service: por que medir performance? O que quebra sem isso?</div>
+    <div class="problem-body">
+      Toda vez que alguém abre a Netflix, o <span class="term" data-tip="Serviço que calcula, pra cada perfil, quais títulos mostrar e em que ordem — as fileiras da home. É pura decisão sob pressão de tempo: milhões de perfis, resposta em milissegundos." tabindex="0">recommendation-service</span> precisa montar a home inteira em milissegundos: "Continue assistindo", "Porque você viu X", dezenas de fileiras personalizadas rankeadas na hora, pra cada perfil. Em staging isso responde em 40ms. Em produção, na hora de pico, a latência p99 sobe pra 400ms e o uso de memória cresce sem parar até o pod ser morto.<br><br>
+      O problema invisível: <strong>cada requisição de ranking está alocando dezenas de objetos no heap</strong> que poderiam ficar na stack. O GC roda a cada poucos segundos pra limpar isso, e durante o GC todas as goroutines param ("stop the world"). Sem <code>pprof</code> você não vê nada disso — só sente a home carregando devagar.<br><br>
+      Sem visibilidade, o time chuta soluções: aumenta réplicas (não resolve — o problema é por requisição, não de capacidade), adiciona cache em cima do sintoma (não resolve — o gargalo é alocação, não cálculo repetido), reescreve trechos aleatórios achando que é "lógica lenta". <span class="highlight">Errando porque está atirando no escuro.</span>
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">Otimizar no escuro, por intuição</div>
+      <div class="compare-body">
+        Ver a home lenta e sair trocando código "que parece pesado", subindo réplicas, ou jogando cache em cima do endpoint. <strong>Sem medir, você não sabe se o gargalo é CPU, alocação ou I/O</strong> — e pode gastar um sprint inteiro otimizando uma função que já era 2% do tempo total.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">pprof primeiro, código depois</div>
+      <div class="compare-body">
+        Flame graph mostra exatamente qual função consome CPU. Escape analysis mostra qual struct de score está indo pro heap sem precisar. Você troca <code>map[string]interface{}</code> por struct concreta com <code>sync.Pool</code>, roda o benchmark, e só então confirma no número: <strong>alocações caem 80%, p99 cai de 400ms pra 60ms.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l1">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Benchmarks com <code>testing.B</code> — <code>b.ResetTimer()</code>, <code>b.ReportAllocs()</code>, armadilhas comuns</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>go test -bench -benchmem -count -benchtime</code> — interpretar ns/op, B/op, allocs/op</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">CPU profiling com <code>pprof</code> — <code>go tool pprof</code>, flame graphs, identificar hot paths</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Heap profiling — identificar alocações desnecessárias, objetos que escapam para o heap</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Escape analysis: <code>go build -gcflags="-m"</code> — por que uma variável vai para o heap</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>go tool trace</code> — latência de scheduler, GC pauses, goroutine blocking events</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Reduzir alocações — <code>sync.Pool</code>, pre-alocação de slices, reutilização de buffers</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>GOMAXPROCS</code> e impacto real no throughput de workloads CPU-bound vs I/O-bound</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h1">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Escrever a versão ingênua e o benchmark base</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie a função <code>RankRows(profile UserProfile, catalog []Title) []Row</code> que itera sobre 50 mil títulos do catálogo e calcula score de afinidade por título, agrupando em fileiras ("Porque você viu X"). Use <code>map[string][]float64</code> para agrupar scores por categoria/gênero. Escreva <code>BenchmarkRankRows(b *testing.B)</code> e rode <code>go test -bench=. -benchmem -count=5</code>. Anote os números iniciais: ns/op, B/op, allocs/op.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Benchmark roda e você tem os números base anotados. Espere algo como 200ms/op e 50+ allocs/op.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Gerar e ler o flame graph de CPU</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Rode <code>go test -bench=. -cpuprofile=cpu.prof</code>. Depois <code>go tool pprof -http=:8080 cpu.prof</code>. Abra o navegador, vá em "Flame Graph". Identifique qual função ocupa mais CPU. Documente: qual função é a mais lenta? É a alocação do map, o sort para p99, ou o GC?</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Você consegue nomear a função responsável por >30% do CPU no flame graph.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Rodar escape analysis e entender as alocações</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Rode <code>go build -gcflags="-m -m" ./...</code> e leia a saída. Procure por linhas como "escapes to heap" para os objetos dentro da função. Identifique quais variáveis estão escapando e por quê — geralmente é porque são passadas para uma interface{} ou porque o slice cresce além do tamanho inicial.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Você consegue explicar por que pelo menos 2 variáveis escapam para o heap nessa função.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div><div class="step-title">Otimizar: pré-alocar, trocar map por slice, sync.Pool</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Aplique as otimizações: (1) pré-aloque o slice de resultados com <code>make([]float64, 0, len(txs))</code>; (2) se usou <code>map[string]interface{}</code>, troque por struct concreta; (3) se criar buffers temporários no loop, use <code>sync.Pool</code> para reutilizá-los. Rode o benchmark novamente e compare com os números base.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Redução de >40% em B/op e allocs/op em relação à versão ingênua. Documente antes/depois.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">High Performance Go Workshop — Dave Cheney</span>
+    <span class="res">Profiling Go Programs (go.dev/blog)</span>
+    <span class="res">go tool pprof (pkg.go.dev)</span>
+    <span class="res">go tool trace (pkg.go.dev)</span>
+    <span class="res">Netflix Tech Blog — Performance Engineering</span>
+  </div>
+  <button class="btn-done" id="d1" onclick="markDone(1)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(0)">← Concorrência</button><button class="nbtn" onclick="goTab(2)">gRPC →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     03 · gRPC
+════════════════════════════════════════════ -->
+<div class="panel" id="p2">
+  <div class="mhead">
+    <div class="micon ic-go">🔗</div>
+    <div>
+      <div class="meyebrow">Módulo 03</div>
+      <div class="mtitle">gRPC & Protocol Buffers</div>
+      <div class="mdesc">Comunicação tipada entre microsserviços com deadline propagation e interceptors.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 3–4</span><span class="badge bhard">Alta prioridade</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct2">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar2"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">Por que gRPC? REST entre microsserviços não basta?</div>
+    <div class="problem-body">
+      O <span class="term" data-tip="Serviço que fica no meio do caminho toda vez que alguém aperta play: decide se o stream pode começar, e junta as respostas de outros serviços (licença, metadados) antes de liberar o vídeo pro player." tabindex="0">playback-api</span> é o serviço que decide se e como um stream começa: ele chama o <span class="term" data-tip="Serviço responsável por emitir a licença de DRM — a 'chave' que autoriza aquele dispositivo específico a decodificar o vídeo. Sem essa licença, o arquivo chega no aparelho mas não consegue ser reproduzido." tabindex="0">license-service</span> pra emitir a licença <span class="term" data-tip="Digital Rights Management: mecanismo de proteção contra cópia que criptografa o vídeo e só libera a decodificação pra quem tem uma licença válida. É por isso que você não consegue simplesmente baixar e copiar um arquivo de stream." tabindex="0">DRM</span> e o <span class="term" data-tip="Serviço dono dos dados descritivos de um título: duração exata, faixas de áudio disponíveis, legendas, sinopse. Não guarda o vídeo em si, só as informações sobre ele." tabindex="0">metadata-service</span> pra pegar duração, faixas de áudio e legendas do título. Hoje isso é REST/JSON. Alguém muda o campo <code>durationSeconds</code> de <code>int</code> pra <code>float64</code> no metadata-service. <strong>Não tem erro de compilação. Não tem erro em staging.</strong> Em produção, o playback-api continua deserializando como int, truncando a duração silenciosamente — o "continue assistindo" de milhões de usuários começa a errar a posição de retomada em segundos, por semanas, até alguém perceber.<br><br>
+      Outro problema: a chamada REST pro license-service às vezes leva 8 segundos, sem timeout configurado. A goroutine fica bloqueada esperando. Com milhões de starts de stream por minuto, isso significa milhares de goroutines presas ao mesmo tempo. <span class="highlight">O playback-api fica sem capacidade e começa a rejeitar novos starts de stream — em toda plataforma, ao mesmo tempo.</span> Um serviço lento cascateou pra derrubar a experiência de assistir.<br><br>
+      gRPC resolve isso: o schema é Protobuf, e mudar o tipo de um campo quebra a compilação antes de chegar em produção. Deadline propagation é nativo — o <code>ctx</code> com timeout de 300ms no client se propaga automaticamente pras chamadas downstream, então o playback-api falha rápido em vez de travar. Interceptors adicionam trace ID, autenticação e métricas em um lugar só — essencial quando um único play atravessa dezenas de serviços.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">REST/JSON sem contrato nem timeout</div>
+      <div class="compare-body">
+        Schema é um acordo informal em documentação que ninguém revisa. Um campo muda de tipo e só quebra em produção, silenciosamente. Sem deadline propagado, um serviço lento trava goroutines em cascata até o playback-api inteiro parar de responder.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">gRPC com Protobuf e deadline propagation</div>
+      <div class="compare-body">
+        Mudança de tipo quebra o <code>protoc</code>/compilação antes do deploy. <code>context</code> com timeout se propaga automaticamente pra cada chamada downstream — o playback-api falha rápido e cai pra um fallback em vez de travar indefinidamente esperando o license-service.
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l2">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Protocol Buffers v3 — tipos escalares, nested messages, enums, campo opcional vs required</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Geração de código com <code>protoc</code> + <code>protoc-gen-go</code> e <code>protoc-gen-go-grpc</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">4 tipos de RPC — Unary, Server streaming, Client streaming, Bidirectional streaming</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Interceptors — logging, autenticação, métricas, recovery de panic em um lugar centralizado</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Metadata — propagar trace IDs, auth tokens entre serviços via <code>metadata.AppendToOutgoingContext</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Error handling com <code>status</code> e <code>codes</code> — mapear erros de domínio para códigos gRPC</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Deadline propagation — context timeout atravessa chamadas encadeadas automaticamente</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Testes com <code>bufconn</code> — servidor gRPC in-memory sem rede real nos testes</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h2">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Definir o .proto e gerar o código Go</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie <code>proto/playback.proto</code> com <code>service PlaybackService</code> contendo dois RPCs: <code>StartPlayback(StartRequest) returns (StartResponse)</code> e <code>ListAudioTracks(ListRequest) returns (stream AudioTrack)</code>. Defina as mensagens com campos tipados (use <code>int64</code> para duração em milissegundos, nunca float). Configure o <code>Makefile</code> com o comando <code>protoc</code> correto. Rode e verifique os arquivos <code>*.pb.go</code> e <code>*_grpc.pb.go</code> gerados.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Arquivos Go gerados, compilam sem erros, e você consegue instanciar uma <code>StartRequest{}</code> no código.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Implementar o servidor gRPC com os dois handlers</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie a struct <code>PlaybackServer</code> que implementa a interface gerada. Implemente <code>StartPlayback</code>: valide o request, simule chamada ao license-service (sleep 100ms), retorne resposta. Implemente <code>ListAudioTracks</code>: use um loop que envia cada faixa via <code>stream.Send(&amp;track)</code> com <code>time.Sleep(10ms)</code> entre cada uma. Suba o servidor na porta 50051 com <code>grpc.NewServer()</code>.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Servidor sobe sem erros. Você testa com <code>grpcurl</code> ou <code>evans</code> e recebe respostas reais.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Adicionar interceptor de autenticação via metadata</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie um <code>UnaryInterceptor</code> que extrai o header <code>authorization</code> do metadata do contexto. Se ausente ou inválido, retorna <code>status.Error(codes.Unauthenticated, "token inválido")</code>. Registre no servidor com <code>grpc.UnaryInterceptor(authInterceptor)</code>. No cliente, adicione o token com <code>metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer token123")</code>.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Chamada sem token retorna erro Unauthenticated. Chamada com token válido passa. Testado via grpcurl.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div><div class="step-title">Escrever testes com bufconn</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">No arquivo de teste, crie um listener in-memory com <code>bufconn.Listen(1024 * 1024)</code>. Suba o servidor gRPC nesse listener. Crie o client com <code>grpc.DialContext</code> passando um <code>contextDialer</code> que usa o bufconn. Escreva table-driven tests para os dois RPCs: cenário happy path, token ausente, request inválido. Nenhum teste abre porta TCP real.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text"><code>go test ./...</code> passa. Todos os cenários testados sem servidor real rodando.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">grpc.io/docs/languages/go</span>
+    <span class="res">grpc/grpc-go (GitHub)</span>
+    <span class="res">google.golang.org/grpc/test/bufconn</span>
+    <span class="res">Netflix Tech Blog — gRPC no ecossistema de microsserviços</span>
+  </div>
+  <button class="btn-done" id="d2" onclick="markDone(2)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(1)">← Performance</button><button class="nbtn" onclick="goTab(3)">Kafka →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     04 · KAFKA
+════════════════════════════════════════════ -->
+<div class="panel" id="p3">
+  <div class="mhead">
+    <div class="micon ic-purple">📨</div>
+    <div>
+      <div class="meyebrow">Módulo 04</div>
+      <div class="mtitle">Kafka & Mensageria</div>
+      <div class="mdesc">At-least-once, Outbox Pattern, DLQ. O que um sistema em escala Netflix usa para não perder eventos.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 4–5</span><span class="badge bhard">Alta prioridade</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct3">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar3"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">Por que Kafka? Por que não chamar o serviço direto?</div>
+    <div class="problem-body">
+      Toda pausa, play, seek e stop que um usuário faz é um evento de <span class="term" data-tip="O histórico de tudo que um perfil assistiu e como assistiu (o que deu play, pausou, pulou). É o dado bruto que alimenta 'continue assistindo', recomendação e relatórios de audiência." tabindex="0">watch-history</span>. Esses eventos alimentam três coisas: o "continue assistindo", o <span class="term" data-tip="Serviço que calcula, pra cada perfil, quais títulos mostrar e em que ordem na home." tabindex="0">recommendation-service</span>, e o relatório de horas assistidas que a Netflix usa pra calcular royalties de licenciamento pros estúdios (quanto mais um título é assistido, maior o valor pago a quem detém os direitos). Se o <span class="term" data-tip="Serviço que decide se e como um stream começa e coordena as chamadas necessárias pra isso." tabindex="0">playback-api</span> chamasse esses três consumidores diretamente no handler de cada evento de play, você teria acoplamento sério: <strong>se o serviço de recomendação estiver fora do ar, o play falha</strong> — alguém não consegue assistir por causa de um serviço que nem deveria estar no caminho crítico.<br><br>
+      Então você tenta: "vou publicar no Kafka depois de salvar a posição de retomada no banco". Mas surge o problema clássico: você salva no Postgres, o pod morre antes de publicar no Kafka (nó preemptado, deploy no meio, o que for). <span class="highlight">A posição de retomada está certa, mas o evento nunca chegou ao downstream.</span> O recommendation-service não soube que o usuário assistiu, e o relatório de horas assistidas fica sub-reportado pro estúdio — dinheiro real de royalties calculado errado, em escala.<br><br>
+      O Outbox Pattern resolve isso: dentro da mesma transação do banco, você salva a posição de retomada E o evento numa tabela <code>outbox</code>. Um worker separado lê essa tabela e publica no Kafka. Se falhar, tenta de novo — os dados estão no banco. Se o Kafka estiver fora, o worker espera. <strong>Nenhum evento se perde.</strong> E o consumer precisa ser idempotente, porque o worker pode publicar o mesmo evento duas vezes.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">Salvar no banco, depois publicar — sem garantia</div>
+      <div class="compare-body">
+        Duas operações separadas (grava DB, publica Kafka) sem transação entre elas. Se o processo morrer entre as duas, <strong>o evento de watch-history simplesmente desaparece</strong> — sem erro visível, sem alarme, só um horas-assistidas errado semanas depois.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">Outbox Pattern + consumer idempotente</div>
+      <div class="compare-body">
+        Grava o evento na mesma transação da posição de retomada. Um worker dedicado publica a partir da tabela outbox com retry — <strong>garantia de at-least-once.</strong> O consumer deduplica por <code>event_id</code> porque o worker pode publicar duas vezes, e isso é esperado, não um bug.
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l3">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Fundamentos Kafka — topics, partitions, consumer groups, offsets, retenção de mensagens</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Producers em Go com <code>franz-go</code> — acks, retries, idempotência do producer (<code>RequiredAcks</code>)</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">At-least-once vs exactly-once — por que at-least-once domina e exige idempotência no consumer</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Commit manual de offset — por que auto-commit é perigoso em escala (você pode perder eventos de watch-history)</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Partitioning strategy — todas as mensagens de uma conta na mesma partition garante ordenação</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Dead Letter Queue — isolar mensagens que falham N vezes sem travar a fila principal</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Outbox Pattern — transação atômica entre escrita no DB e publicação de evento</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h3">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Subir Kafka local com Docker Compose</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie um <code>docker-compose.yml</code> com Kafka (KRaft mode, sem Zookeeper) e Postgres. Configure o Kafka com <code>KAFKA_AUTO_CREATE_TOPICS_ENABLE=true</code>. Suba com <code>docker compose up -d</code>. Teste com <code>kafka-topics.sh --list</code> dentro do container. Crie manualmente o topic <code>playback.watch-events</code> com 3 partitions.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Topic existe. Você consegue produzir e consumir uma mensagem de teste via CLI dentro do container.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Criar a tabela outbox e a transação atômica</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">No Postgres, crie a tabela <code>outbox(id uuid, topic text, payload jsonb, published_at timestamptz, created_at timestamptz)</code>. Na função que grava um evento de watch, use uma única transação SQL: <code>BEGIN</code> → UPSERT em <code>watch_progress</code> (posição de retomada) → INSERT em <code>outbox</code> → <code>COMMIT</code>. Se qualquer operação falhar, o ROLLBACK desfaz as duas. Teste derrubando o banco no meio da transação.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Todo evento de watch gravado com sucesso tem exatamente um registro na tabela outbox. Nenhum registro orphan.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Criar o worker de polling e publicação</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie um goroutine que roda em loop: a cada 500ms, faz <code>SELECT * FROM outbox WHERE published_at IS NULL LIMIT 100</code>. Para cada linha, publica no Kafka usando <code>franz-go</code> com o <code>profile_id</code> como partition key (garante ordenação dos eventos de um mesmo perfil). Após publicar com sucesso, faz <code>UPDATE outbox SET published_at = NOW() WHERE id = $1</code>. Se o Kafka estiver fora, o worker espera e tenta na próxima iteração.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Derrube o Kafka, gere 5 eventos de watch, suba o Kafka — os 5 eventos chegam ao topic em até 1 segundo.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div><div class="step-title">Criar consumer com commit manual e DLQ</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie um consumer com <code>franz-go</code> e commit manual de offset (desative auto-commit). Para cada mensagem, processe a lógica (ex: atualizar o modelo de recomendação do perfil). Se processar com sucesso, commit o offset. Se falhar, incremente um contador de tentativas (armazenado em Redis ou em memória). Após 3 falhas, produza a mensagem para o topic <code>playback.watch-events.dlq</code> e comite o offset original.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Mensagem que falha 3 vezes aparece no topic DLQ. Mensagens seguintes continuam sendo processadas normalmente.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">twmb/franz-go (GitHub)</span>
+    <span class="res">kafka.apache.org/documentation</span>
+    <span class="res">DDIA — Kleppmann (caps. 8–9)</span>
+    <span class="res">Outbox Pattern (microservices.io)</span>
+  </div>
+  <button class="btn-done" id="d3" onclick="markDone(3)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(2)">← gRPC</button><button class="nbtn" onclick="goTab(4)">K8s →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     05 · K8S
+════════════════════════════════════════════ -->
+<div class="panel" id="p4">
+  <div class="mhead">
+    <div class="micon ic-go">🐳</div>
+    <div>
+      <div class="meyebrow">Módulo 05</div>
+      <div class="mtitle">Docker & Kubernetes</div>
+      <div class="mdesc">Multi-stage builds, graceful shutdown, probes e zero-downtime deployment.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 5–6</span><span class="badge bmed">Médio</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct4">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar4"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">O que quebra sem graceful shutdown e probes corretos?</div>
+    <div class="problem-body">
+      Você faz um deploy novo do <span class="term" data-tip="Serviço que fica no meio do caminho toda vez que alguém aperta play: decide se o stream pode começar e coordena as chamadas necessárias pra isso." tabindex="0">playback-api</span> enquanto milhões de streams estão ativos ao redor do mundo. O Kubernetes mata o pod antigo e sobe o novo. Durante essa troca de ~3 segundos, <strong>as conexões long-lived de <span class="term" data-tip="Sinal periódico e curto que o player manda pro servidor em intervalos regulares dizendo 'ainda estou assistindo'. Se parar de chegar, o servidor entende que o stream acabou e libera o slot." tabindex="0">heartbeat</span> dos streams em andamento naquele pod são cortadas abruptamente</strong> — o cliente recebe um erro de conexão no meio da reprodução e o player precisa rebufferizar ou reconectar. Multiplique isso por centenas de pods fazendo rolling update, e você tem um pico visível de erro de playback na hora do deploy.<br><br>
+      Outro cenário: o pod novo subiu, mas a connection pool com o license-service e o cache de sessão ainda estão inicializando. O Kubernetes já mandou tráfego pra ele. <span class="highlight">Os primeiros starts de stream falham com erro de licença</span> porque a readiness probe não estava configurada — o pod estava "pronto" pro K8s, mas não pro mundo real.<br><br>
+      Graceful shutdown resolve o primeiro problema: ao receber SIGTERM, o servidor para de aceitar novas conexões, aguarda os streams em andamento serem migrados ou finalizados (com timeout), e só então encerra. Readiness probe resolve o segundo: o pod só recebe tráfego quando o handler <code>/health/ready</code> confirma que a connection pool e o cache de sessão estão de fato quentes.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">SIGKILL direto, readiness genérica</div>
+      <div class="compare-body">
+        Pod recebe SIGTERM e morre na hora, cortando streams em andamento. Readiness probe só checa "processo respondeu HTTP 200" sem checar dependências reais — o pod entra no balanceamento antes de estar de fato pronto pra servir tráfego.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">Drenar antes de morrer, provar que está pronto</div>
+      <div class="compare-body">
+        Graceful shutdown drena conexões ativas antes de encerrar. Readiness probe só retorna 200 depois de confirmar connection pool e cache quentes — <strong>zero-downtime deploy mesmo com milhões de streams em voo.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l4">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Dockerfile multi-stage — build em <code>golang:1.22</code>, binário copiado para <code>scratch</code> ou <code>distroless</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Kubernetes — Deployment, Service, ConfigMap, Secret, Namespace e suas funções</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Liveness vs Readiness probe — liveness reinicia o pod, readiness tira do balanceamento. Confundir derruba tudo</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Graceful shutdown — capturar SIGTERM, drenar HTTP e gRPC, aguardar jobs em andamento</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Resource requests vs limits — o que acontece quando o pod excede o memory limit (OOMKill)</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">HPA — escala horizontal baseada em CPU ou métricas Prometheus customizadas</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h4">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Escrever Dockerfile multi-stage e reduzir imagem</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Stage 1 (<code>builder</code>): use <code>golang:1.22-alpine</code>, copie o código, rode <code>CGO_ENABLED=0 GOOS=linux go build -o /app ./cmd/server</code>. Stage 2: use <code>gcr.io/distroless/static</code>, copie apenas o binário do stage 1. Construa e compare o tamanho: a imagem final deve ter menos de 20MB.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text"><code>docker build</code> funciona. <code>docker images</code> mostra imagem &lt;20MB. <code>docker run</code> inicia o servidor.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Implementar /health/live e /health/ready no servidor Go</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc"><code>/health/live</code>: retorna sempre 200 se o processo está vivo. <code>/health/ready</code>: testa a connection pool do banco (<code>db.PingContext(ctx)</code>) e só retorna 200 se conseguir fazer ping em menos de 100ms. Se o banco estiver fora, retorna 503. Registre esses handlers num servidor HTTP separado na porta 8081, diferente da porta de aplicação 8080.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Com banco up: <code>curl :8081/health/ready</code> retorna 200. Com banco down: retorna 503.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Implementar graceful shutdown com SIGTERM</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">No <code>main.go</code>, suba o servidor HTTP em uma goroutine. Na goroutine principal, use <code>signal.NotifyContext</code> para aguardar SIGTERM ou SIGINT. Ao receber o sinal, chame <code>srv.Shutdown(ctx)</code> com timeout de 30s — isso para de aceitar novas conexões e aguarda as em andamento. Logue "iniciando shutdown" e "shutdown completo" para visibilidade.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Envie <code>kill -SIGTERM &lt;pid&gt;</code> durante uma requisição longa (sleep 5s). A requisição completa. O servidor encerra depois.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div><div class="step-title">Deploy no Kind com Deployment, probes e test de zero-downtime</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie o cluster com <code>kind create cluster</code>. Escreva o manifest <code>deployment.yaml</code> com 3 réplicas, readiness probe em <code>/health/ready</code>, liveness probe em <code>/health/live</code>, e <code>terminationGracePeriodSeconds: 35</code>. Faça o deploy. Rode <code>k6</code> simulando 10 starts de stream/seg. No meio do teste, rode <code>kubectl rollout restart deployment/playback</code>. Verifique que nenhuma requisição falhou (0 erros na saída do k6).</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">k6 termina com 0 falhas durante o rolling restart. Você tem zero-downtime deployment funcionando.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">kind.sigs.k8s.io</span>
+    <span class="res">kubernetes.io/docs</span>
+    <span class="res">Dockerfile multi-stage (docs.docker.com)</span>
+    <span class="res">k6.io</span>
+    <span class="res">Netflix Tech Blog — Titus, o orquestrador de containers da Netflix</span>
+  </div>
+  <button class="btn-done" id="d4" onclick="markDone(4)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(3)">← Kafka</button><button class="nbtn" onclick="goTab(5)">Distribuído →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     06 · FINTECH PATTERNS
+════════════════════════════════════════════ -->
+<div class="panel" id="p5">
+  <div class="mhead">
+    <div class="micon ic-orange">💳</div>
+    <div>
+      <div class="meyebrow">Módulo 06</div>
+      <div class="mtitle">Padrões de Sistemas Distribuídos em Escala</div>
+      <div class="mdesc">Idempotência, Saga, CQRS, circuit breaker, rate limiting. A linguagem técnica da vaga.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 6–7</span><span class="badge bexp">Expert</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct5">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar5"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">O que significa uma inconsistência em escala Netflix?</div>
+    <div class="problem-body">
+      Um usuário aperta play num plano Standard, que permite 2 streams simultâneos. A conexão do celular cai antes da resposta chegar. O app não sabe se o play foi registrado. Ele tenta de novo. <strong>Sem idempotência, o servidor conta duas reservas de slot pro mesmo play</strong> — e um usuário legítimo assistindo em 1 dispositivo é bloqueado de abrir um segundo porque o sistema acha que já tem 2 streams ocupados.<br><br>
+      Outro cenário: o pipeline de publicação de um título tem etapas encadeadas — encode termina, <span class="term" data-tip="Quality Control: verificação automatizada pós-encode que confere se a rendition não saiu corrompida, fora de sincronia ou com defeito visual antes de deixar publicar." tabindex="0">QC</span> (controle de qualidade automatizado) aprova, o conteúdo é empurrado pra <span class="term" data-tip="Content Delivery Network: rede de servidores espalhados geograficamente que guarda cópias do vídeo perto de cada usuário, pra ele não precisar buscar o arquivo do outro lado do mundo toda vez que der play." tabindex="0">CDN</span>, e só então o catálogo marca o título como "disponível". Se o push pra CDN falhar depois do catálogo já ter publicado, <span class="highlight">o botão "assistir agora" aparece pra milhões de usuários, mas o vídeo dá 404 na CDN.</span> Sem Saga Pattern, não existe rollback automático — vira intervenção manual às pressas.<br><br>
+      Outro cenário ainda: o <span class="term" data-tip="Serviço que calcula, pra cada perfil, quais títulos mostrar e em que ordem na home." tabindex="0">recommendation-service</span> depende do <span class="term" data-tip="Serviço dono dos dados descritivos de um título: duração, faixas de áudio, legendas, sinopse." tabindex="0">metadata-service</span> pra montar a home. Se o metadata-service degradar, cada chamada trava esperando timeout, e o efeito cascateia até a home inteira parar de carregar — quando o certo seria cair pra fileiras genéricas em cache e seguir funcionando.<br><br>
+      Idempotência resolve o primeiro: cada requisição carrega um <code>idempotency_key</code> do cliente; a segunda chamada com a mesma chave retorna o resultado já armazenado, sem reprocessar. Saga resolve o segundo: cada etapa publica um evento, e se uma falhar, o sistema processa eventos de compensação (despublicar do catálogo) automaticamente. Circuit Breaker resolve o terceiro: depois de N falhas seguidas, o breaker abre e força fallback imediato em vez de deixar todo mundo esperar timeout.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">Confiar que a rede e as dependências nunca falham</div>
+      <div class="compare-body">
+        Retry sem idempotência duplica efeito. Pipeline de publicação sem compensação deixa o catálogo mentir sobre o que está de fato disponível. Chamada síncrona sem circuit breaker deixa uma dependência degradada derrubar todo mundo que depende dela.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">Assumir falha parcial como normal e desenhar pra ela</div>
+      <div class="compare-body">
+        Idempotency key torna retry seguro. Saga garante que uma etapa falha desfaz o que já rodou. Circuit breaker isola degradação — o recommendation-service cai pra fileiras em cache em vez de travar a home inteira. <strong>Falha parcial vira degradação graciosa, não outage total.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l5">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Idempotência — chaves de idempotência, deduplicação no servidor, TTL do cache de resultados</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Saga Pattern — coreografia (eventos) vs orquestração (coordenador central), quando usar cada um</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Concorrência otimista vs pessimista — <code>SELECT FOR UPDATE</code> vs versioning com campo <code>version int</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">CQRS — separar reads de writes para escala independente, read models denormalizados (ex: home montada de um read model pré-calculado, não de joins ao vivo)</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Rate limiting — token bucket e sliding window por <code>account_id</code>, implementação com Redis</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Circuit Breaker — estados closed/open/half-open, fallback strategy, <code>sony/gobreaker</code></div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Backpressure — o que acontece quando o sistema não aguenta a carga e como proteger com filas</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h5">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Implementar idempotência no start de stream com tabela de resultados</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie a tabela <code>idempotency_keys(key text PRIMARY KEY, response jsonb, created_at timestamptz)</code>. No handler de <code>StartPlayback</code>, antes de reservar um slot de stream concorrente: tente inserir a chave. Se já existe (conflito de PK), retorne o response armazenado imediatamente, sem reservar slot de novo. Se não existe, processe normalmente, salve o resultado e retorne. Adicione um job de limpeza que deleta registros com mais de 24h.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Envie a mesma requisição de start 3 vezes com a mesma <code>idempotency_key</code> (simulando retry de rede instável). O banco mostra apenas 1 slot reservado. Todas as 3 respostas são idênticas.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Implementar Saga de compensação no pipeline de publicação</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Divida a publicação de um título em etapas via eventos Kafka: (1) encode termina → publica <code>encode.completed</code>; (2) consumer de QC valida e publica <code>qc.passed</code>; (3) consumer de CDN empurra o conteúdo e publica <code>cdn.pushed</code>; (4) só então o catalog-service marca o título como disponível e publica <code>catalog.published</code>; (5) se o push pra CDN falhar após 3 tentativas, publica <code>cdn.push_failed</code>; (6) consumer de compensação recebe <code>cdn.push_failed</code> e garante que o título nunca foi marcado como disponível no catálogo. Teste matando o push de CDN no meio.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Push de CDN falha → título nunca aparece como "assistir agora" no catálogo. Sem intervenção manual, sem botão quebrado pro usuário.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Limitar streams concorrentes por account_id com Redis</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Use <code>golang.org/x/time/rate</code> para um limiter em memória primeiro (mais simples). Depois migre para Redis: cada <code>StartPlayback</code> bem-sucedido faz <code>SADD</code> do <code>stream_id</code> num set <code>active_streams:{account_id}</code> com TTL renovado a cada heartbeat; um <code>Stop</code> ou timeout de heartbeat faz <code>SREM</code>. Antes de autorizar um novo play, cheque <code>SCARD</code> contra o limite do plano (ex: 2 pro Standard). Se estourar, retorne erro "limite de dispositivos simultâneos atingido" em vez de 429 genérico.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Com limite de 2 streams, o 3º start simultâneo é bloqueado com mensagem clara. Parar um stream libera o slot imediatamente pro próximo.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">Microservices Patterns — Richardson (livro)</span>
+    <span class="res">Stripe — Idempotency Keys (stripe.com/docs)</span>
+    <span class="res">sony/gobreaker (GitHub)</span>
+    <span class="res">golang.org/x/time/rate</span>
+    <span class="res">Netflix Tech Blog — Chaos Engineering & Resilience</span>
+  </div>
+  <button class="btn-done" id="d5" onclick="markDone(5)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(4)">← K8s</button><button class="nbtn" onclick="goTab(6)">Go Idioms →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     07 · GO IDIOMS
+════════════════════════════════════════════ -->
+<div class="panel" id="p6">
+  <div class="mhead">
+    <div class="micon ic-green">🔧</div>
+    <div>
+      <div class="meyebrow">Módulo 07</div>
+      <div class="mtitle">Go Idioms & Patterns</div>
+      <div class="mdesc">Go como linguagem principal. Interfaces, errors, generics, estrutura de projeto real.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 7–8</span><span class="badge bmed">Médio</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct6">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar6"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">Por que Go "do jeito Go" importa em entrevista sênior?</div>
+    <div class="problem-body">
+      Você chega na entrevista técnica e o avaliador pede pra você explicar o código do <span class="term" data-tip="Serviço que decide se e como um stream começa e coordena as chamadas necessárias pra isso." tabindex="0">playback-api</span>. Você mostra um serviço que usa interfaces largas com 15 métodos, errors sem contexto (<code>return err</code> sem wrap), e um <code>main.go</code> com 800 linhas porque "é simples assim". O avaliador vê alguém que usa Go como se fosse Java com sintaxe diferente.<br><br>
+      Go tem uma filosofia forte: <strong>interfaces pequenas, composição ao invés de herança, errors como valores, zero magic</strong>. A interface <code>io.Reader</code> tem 1 método. A interface <code>io.Writer</code> tem 1 método. Isso é intencional. Quando você define uma interface com 15 métodos, você está impossibilitando testes simples, aumentando acoplamento, e jogando fora a principal vantagem do sistema de tipos de Go.<br><br>
+      <span class="highlight">Em produção, isso se traduz em código que é impossível de testar sem subir Postgres, Kafka e Redis de verdade.</span> Se sua função aceita um <code>*sql.DB</code> em vez de uma interface <code>Querier</code>, você não consegue testar a lógica de reserva de slot de stream sem banco real. Se seu error não tem contexto (<code>fmt.Errorf("startPlayback: %w", err)</code>), você não consegue rastrear em qual das dezenas de chamadas encadeadas de um play ele originou. Essas são as coisas que separam Go sênior de pleno.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">Tipos concretos, errors sem contexto</div>
+      <div class="compare-body">
+        Função que aceita <code>*sql.DB</code> direto, error propagado nu com <code>return err</code>. Testar exige subir Postgres real; quando falha em produção, o log mostra só "sql: no rows" sem dizer em qual operação, de qual serviço, num play que passou por 6 chamadas.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">Interfaces pequenas, errors com cadeia</div>
+      <div class="compare-body">
+        Função aceita <code>Querier</code> (interface de 2 métodos), testável com fake em memória. Error sobe com <code>%w</code> em cada camada — a mensagem final vira um rastro completo: <code>startPlayback: reserveSlot: queryLimit: sql: no rows</code>.
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l6">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Interfaces implícitas — design por comportamento, prefer small interfaces (1–3 métodos)</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Error wrapping — <code>fmt.Errorf("%w", err)</code>, <code>errors.Is</code>, <code>errors.As</code>, erro com contexto de operação</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Generics (Go 1.18+) — type parameters, constraints, quando evitar (não use para tudo)</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Effective Go + Go Proverbs — a filosofia da linguagem, leitura obrigatória antes da entrevista</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Dependency injection — manual ou com <code>wire</code>, sem magic de reflection, explícito e testável</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Estrutura de projeto — <code>cmd/</code>, <code>internal/</code>, separação de domínio e infraestrutura</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Go modules — <code>replace</code> directives, workspaces, versionamento semântico de pacotes internos</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h6">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Extrair dependências para interfaces pequenas</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Pegue o serviço do módulo 6. Identifique todas as dependências concretas: <code>*sql.DB</code>, cliente Kafka, cliente Redis. Para cada uma, defina uma interface com apenas os métodos que você usa. Ex: se você só usa <code>db.QueryContext</code> e <code>db.ExecContext</code>, crie <code>type Querier interface { QueryContext(...); ExecContext(...) }</code>. Substitua os tipos concretos pelas interfaces em todas as funções.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Nenhuma função de domínio importa pacotes de infraestrutura (<code>database/sql</code>, <code>franz-go</code>). Só interfaces.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Criar fakes das interfaces e testar sem dependências</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Para cada interface, crie uma implementação fake em Go puro no pacote de testes. Ex: <code>type FakeQuerier struct { transfers []Transfer }</code> que implementa <code>Querier</code> armazenando em memória. Use o fake nos testes de unidade. Você não precisa de <code>testcontainers</code> para testar lógica de negócio — só para testes de integração.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text"><code>go test ./internal/...</code> passa 100% sem nenhum container rodando. Cobertura &gt;80% em código de domínio.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Adicionar context em todos os errors com %w</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Percorra todo o código e substitua <code>return err</code> nu por <code>return fmt.Errorf("startPlayback: %w", err)</code>. Crie tipos de erro customizados para erros de domínio: <code>type ErrConcurrentStreamLimitExceeded struct { Active, Limit int }</code>. No handler gRPC, use <code>errors.As</code> para detectar o tipo e retornar o código gRPC correto (<code>ResourceExhausted</code> vs <code>Internal</code>). Teste que a mensagem de erro final tem a cadeia completa.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Um erro de banco retorna mensagem como "startPlayback: reserveSlot: queryLimit: sql: no rows". Rastreável sem logs.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">Effective Go (go.dev)</span>
+    <span class="res">Go Proverbs — Rob Pike</span>
+    <span class="res">google/wire (GitHub)</span>
+    <span class="res">Standard Go Project Layout (GitHub)</span>
+  </div>
+  <button class="btn-done" id="d6" onclick="markDone(6)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(5)">← Distribuído</button><button class="nbtn" onclick="goTab(7)">Testes →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     08 · TESTES
+════════════════════════════════════════════ -->
+<div class="panel" id="p7">
+  <div class="mhead">
+    <div class="micon ic-green">🧪</div>
+    <div>
+      <div class="meyebrow">Módulo 08</div>
+      <div class="mtitle">Testes & Qualidade</div>
+      <div class="mdesc">Table-driven, benchmarks, fuzz, integration com containers. Sênior que não testa não é sênior.</div>
+      <div class="mbadges"><span class="badge bw">Semana 9</span><span class="badge bmed">Médio</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Tópicos concluídos</span><span class="mpct" id="pct7">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar7"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 A Problemática</div>
+    <div class="problem-title">O que acontece quando você não tem -race nos testes?</div>
+    <div class="problem-body">
+      Você tem um cache em memória de streams ativos por conta, acessado por múltiplas goroutines a cada play/heartbeat/stop. O código parece funcionar em desenvolvimento — você roda 5 vezes, tudo ok. Em produção, na hora de pico global, o <span class="term" data-tip="Serviço que decide se e como um stream começa e coordena as chamadas necessárias pra isso." tabindex="0">playback-api</span> crasheia aleatoriamente com <code>concurrent map read and write</code>. Você passa 3 dias tentando reproduzir. <strong>O bug existia há meses, nenhum teste pegou porque ninguém rodou com <code>-race</code>.</strong><br><br>
+      Outro cenário: você tem uma função que valida a <span class="term" data-tip="O conjunto ordenado de renditions (versões de qualidade) de um título, do mais leve ao mais pesado — o que permite o player trocar de qualidade automaticamente conforme a internet do usuário." tabindex="0">bitrate ladder</span> pedida por um device (resolução, codec, bitrate). Você escreve um teste happy path. Funciona. Meses depois, um device antigo manda uma resolução negativa ou um bitrate absurdo, a função não rejeita, e isso propaga um <code>EncodeJob</code> inválido pro pipeline de encode. <span class="highlight">Fuzz testing teria encontrado esse edge case em segundos</span> — ele gera centenas de inputs aleatórios automaticamente.<br><br>
+      Testes não são burocracia. São a diferença entre descobrir o bug agora no seu terminal ou às 3h da manhã num incidente de produção com stream real quebrando pra milhões de usuários.
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card compare-wrong">
+      <div class="compare-label">❌ Jeito errado</div>
+      <div class="compare-title">Testar só o happy path, sem -race</div>
+      <div class="compare-body">
+        Um teste feliz por função, rodado sem <code>-race</code>, sem paralelismo real, sem input adversarial. O bug de concorrência e o edge case de input malformado passam direto pro CI verde e só aparecem em produção, sob carga real.
+      </div>
+    </div>
+    <div class="compare-card compare-right">
+      <div class="compare-label">✅ Jeito certo</div>
+      <div class="compare-title">Table-driven + race detector + fuzz</div>
+      <div class="compare-body">
+        <code>go test -race</code> obrigatório em qualquer código com goroutines. Table-driven cobre os casos de borda que você já previu; fuzz testing gera os que você não previu. <strong>O bug é encontrado no seu terminal, não às 3h da manhã.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de fundamentos</div>
+  <div class="checklist" id="l7">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Table-driven tests — padrão idiomático Go, slice de structs com name/input/expected/wantErr</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Subtests com <code>t.Run</code> e paralelismo com <code>t.Parallel()</code> para acelerar a suite</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Integration tests com <code>testcontainers-go</code> — Postgres e Kafka reais, sem mocks de infra</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Benchmarks — <code>BenchmarkXxx</code>, como comparar implementações com segurança estatística</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Fuzz testing — <code>FuzzXxx</code>, encontrar edge cases automaticamente com input aleatório</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Race detector — <code>go test -race ./...</code>, obrigatório em qualquer código com goroutines</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Coverage — <code>go test -cover ./...</code> + <code>go tool cover -html</code> para identificar gaps</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h7">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Converter testes existentes para table-driven</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Pegue os testes do módulo 6 (idempotência do start de stream). Para cada função com múltiplos casos de teste, crie uma struct <code>testCase</code> com campos <code>name</code>, <code>input</code>, <code>want</code>, <code>wantErr bool</code>. Agrupe numa slice e itere com <code>for _, tc := range cases { t.Run(tc.name, func(t *testing.T) { ... }) }</code>. Adicione <code>t.Parallel()</code> dentro do <code>t.Run</code>. Meça o tempo antes e depois — deve ser mais rápido.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Suite roda em paralelo, tempo total reduz. Cada caso tem nome descritivo que aparece em falhas.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Escrever fuzz test para validação da bitrate ladder</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Para a função <code>ValidateRenditionRequest(codec string, resolution string, bitrate int64) error</code>, crie <code>FuzzValidateRenditionRequest(f *testing.F)</code>. Adicione seed corpus com valores conhecidos: bitrate 0, negativo, <code>math.MaxInt64</code>, codec vazio, resolução malformada. Rode <code>go test -fuzz=FuzzValidateRenditionRequest -fuzztime=30s</code>. O fuzzer vai gerar centenas de variações. Se encontrar um input que causa panic ou comportamento incorreto, ele salva como corpus e você tem o bug documentado.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">30s de fuzzing sem crash. Se um bug for encontrado, ele aparece salvo em <code>testdata/fuzz/</code> para reprodução determinística.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Integration test com testcontainers-go</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">No <code>TestMain</code>, suba um container Postgres real com <code>testcontainers.RunContainer(ctx, "postgres:16", ...)</code>. Rode as migrations. Escreva um teste end-to-end que registra um evento de watch via handler gRPC, verifica no banco que a posição de retomada existe, e verifica na tabela outbox que o evento foi criado. Ao final do teste, o container é destruído automaticamente.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text"><code>go test -run TestRecordWatchEvent ./integration/...</code> passa com Postgres real. Sem mock de banco.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Recursos</div>
+  <div class="resources">
+    <span class="res">testcontainers-go (GitHub)</span>
+    <span class="res">Fuzz testing (go.dev/doc/fuzz)</span>
+    <span class="res">go-cmp (github.com/google/go-cmp)</span>
+    <span class="res">Netflix — Chaos Monkey (GitHub, Simian Army)</span>
+  </div>
+  <button class="btn-done" id="d7" onclick="markDone(7)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(6)">← Go Idioms</button><button class="nbtn" onclick="goTab(8)">Projeto Final →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     09 · PROJETO FINAL
+════════════════════════════════════════════ -->
+<div class="panel" id="p8">
+  <div class="mhead">
+    <div class="micon ic-orange">🚀</div>
+    <div>
+      <div class="meyebrow">Módulo 09 · Projeto Final</div>
+      <div class="mtitle">Mini-Netflix Completa</div>
+      <div class="mdesc">Tudo junto. Seu portfólio concreto para a entrevista. Código real > CV.</div>
+      <div class="mbadges"><span class="badge bw">Semanas 10–12</span><span class="badge bexp">Expert</span></div>
+    </div>
+  </div>
+  <div class="mprog-wrap">
+    <div class="mprog-top"><span>Entregáveis concluídos</span><span class="mpct" id="pct8">0%</span></div>
+    <div class="mbar"><div class="mbar-fill" id="bar8"></div></div>
+  </div>
+
+  <div class="problem-box">
+    <div class="slabel">🔍 O que você vai apresentar à Carol</div>
+    <div class="problem-title">Seu argumento mais forte na entrevista não é o que você sabe — é o que você construiu</div>
+    <div class="problem-body">
+      Quando a Carol perguntar "você já trabalhou com concorrência em Go em produção?", você não vai dizer "sim, estudei goroutines". Você vai dizer: <strong>"Construí um worker pool de transcodificação que processa milhares de renditions por minuto com rate limiting configurável. Aqui está o repositório. Aqui está o flame graph mostrando o pprof antes e depois da otimização do recommendation-service — reduzi alocações em 60%. Aqui está o goleak confirmando zero goroutine leaks."</strong><br><br>
+      Esse projeto integra todos os módulos: o worker pool de encode do módulo 1 alimenta o pipeline de publicação via eventos Kafka do módulo 4, produzidos via Outbox pelo serviço gRPC do módulo 3, que roda no K8s do módulo 5 com graceful shutdown, idempotência e circuit breaker do módulo 6, interfaces testáveis do módulo 7, e suite de testes do módulo 8. <span class="highlight">Cada pergunta da Carol tem uma resposta com link de código.</span>
+    </div>
+  </div>
+
+  <div class="slabel">Checklist de entregáveis</div>
+  <div class="checklist" id="l8">
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code class="term" data-tip="Recebe os arquivos de vídeo dos estúdios e transcodifica em todas as renditions antes de liberar pro catálogo." tabindex="0">ingest-service</code> — worker pool de transcodificação, Outbox Pattern, Postgres</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code class="term" data-tip="Dono do que aparece disponível pro usuário: só marca um título como publicado depois que encode, QC e CDN confirmarem sucesso." tabindex="0">catalog-service</code> — gRPC server, Saga de publicação (encode → QC → CDN → catálogo), interceptors</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code class="term" data-tip="Decide se e como um stream começa: valida licença, checa limite de dispositivos simultâneos, libera o play." tabindex="0">playback-api</code> — gRPC gateway, idempotência no start, limite de streams concorrentes, circuit breaker pro metadata-service, graceful shutdown</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code class="term" data-tip="Consome os eventos de watch-history (play/pause/seek/stop) e atualiza o que alimenta recomendação e relatórios de audiência." tabindex="0">engagement-service</code> — Kafka consumer de watch-events com worker pool, atualização de recomendação, DLQ</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Docker Compose completo — Kafka, Postgres, Redis, Jaeger, todos os serviços</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">Manifests Kubernetes — Deployment, Service, probes, resource limits, HPA</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>/debug/pprof</code> ativo + flame graph documentado de um load test real</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext"><code>go test -race ./...</code> passando em todos os serviços, cobertura &gt;80% em domínio</div></div>
+    <div class="ci" onclick="toggle(this)"><div class="cbox"><span class="ccheck">✓</span></div><div class="ctext">README com diagrama de arquitetura, decisões técnicas explicadas e como rodar em 1 comando</div></div>
+  </div>
+
+  <div class="slabel">Como Fazer — blocos de ~1h</div>
+  <div class="howto" id="h8">
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div><div class="step-title">Criar o monorepo e estrutura de pastas</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Crie um repositório com Go workspaces: <code>go work init</code>. Crie as pastas <code>services/ingest</code>, <code>services/catalog</code>, <code>services/playback</code>, <code>services/engagement</code>, <code>proto/</code>, <code>infra/</code>. Inicialize um módulo Go em cada serviço. Configure o workspace para que os serviços possam importar os protos compartilhados. Adicione um <code>Makefile</code> raiz com comandos <code>make proto</code>, <code>make build</code>, <code>make test</code>, <code>make up</code>.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text"><code>make build</code> compila os 4 serviços sem erro. <code>make up</code> sobe toda a infra com Docker Compose.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div><div class="step-title">Integrar playback-api: gRPC + idempotência + limite de streams</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Combine o serviço gRPC do módulo 3 com o Outbox Pattern do módulo 4 e idempotência/limite de streams do módulo 6. O fluxo completo: client gRPC → handler valida idempotency_key → checa limite de streams concorrentes no Redis → transação atômica (UPSERT watch_progress + INSERT outbox) → worker de outbox publica no Kafka. Todos com interfaces testáveis (módulo 7).</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Uma chamada <code>StartPlayback</code> reserva um slot e o evento aparece no topic Kafka em até 1s. Chamada duplicada retorna mesmo resultado sem reservar slot de novo.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div><div class="step-title">Rodar load test e gerar o flame graph</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">Com todos os serviços rodando, use <code>k6</code> com 50 VUs por 2 minutos simulando starts de stream. Simultaneamente, capture CPU profile: <code>curl http://localhost:6060/debug/pprof/profile?seconds=30 -o cpu.prof</code>. Abra com <code>go tool pprof -http=:8080 cpu.prof</code>. Salve um screenshot do flame graph e adicione ao README com a explicação do que está vendo.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Flame graph salvo no README. Você consegue explicar o top 3 de uso de CPU do seu serviço.</div></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div><div class="step-title">Escrever o README como argumento de entrevista</div><div class="step-time">~1h</div><div class="step-arrow">▶</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">O README deve responder as perguntas da Carol diretamente: diagrama de arquitetura (pode ser ASCII), seção "Decisões técnicas" explicando por que Outbox e não publicar direto, por que worker pool e não goroutine por encode, por que gRPC e não REST entre serviços, por que circuit breaker entre recommendation e metadata. Seção "Resultados de performance" com os números do k6 e pprof. Seção "Como rodar" com <code>make up</code> e <code>make test</code>.</div>
+        <div class="step-done-box"><div class="step-done-label">✓ Critério de conclusão</div><div class="step-done-text">Qualquer pessoa consegue rodar o projeto com 2 comandos e entender cada decisão lendo o README.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-done" id="d8" onclick="markDone(8)">Marcar módulo como concluído ✓</button>
+  <div class="mnav"><button class="nbtn" onclick="goTab(7)">← Testes</button><button class="nbtn" disabled>Fim do plano ✓</button></div>
+</div>
+
+<div class="congrats" id="congrats">
+  <div class="congrats-emoji">🏆</div>
+  <div class="congrats-title">Plano concluído!</div>
+  <p class="congrats-sub">Você tem uma Mini-Netflix rodando de verdade — worker pool de encode, Saga de publicação, circuit breaker, flame graphs documentados — e uma resposta concreta pra cada pergunta da Carol. Agora é só marcar a entrevista.</p>
+</div>
+
+</main>
+
+<script>
+const N = 9;
+const done = new Array(N).fill(false);
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  const list = el.closest('.checklist');
+  const idx = parseInt(list.id.replace('l',''));
+  updateBar(idx);
+  updateGlobal();
+  save();
+}
+
+function updateBar(i) {
+  const list = document.getElementById('l'+i);
+  if (!list) return 0;
+  const all = list.querySelectorAll('.ci').length;
+  const chk = list.querySelectorAll('.ci.checked').length;
+  const pct = all === 0 ? 0 : Math.round(chk/all*100);
+  document.getElementById('pct'+i).textContent = pct+'%';
+  document.getElementById('bar'+i).style.width = pct+'%';
+  return pct;
+}
+
+function updateGlobal() {
+  let totalItems = 0, checkedItems = 0;
+  for (let i = 0; i < N; i++) {
+    const list = document.getElementById('l'+i);
+    if (!list) continue;
+    totalItems += list.querySelectorAll('.ci').length;
+    checkedItems += list.querySelectorAll('.ci.checked').length;
+  }
+  const donePct = done.filter(Boolean).length / N;
+  const itemPct = totalItems ? checkedItems / totalItems : 0;
+  const overall = Math.round((itemPct * 0.7 + donePct * 0.3) * 100);
+  document.getElementById('gpct').textContent = overall + '%';
+  document.getElementById('gbar').style.width = overall + '%';
+  if (done.every(Boolean)) document.getElementById('congrats').classList.add('show');
+}
+
+function markDone(i) {
+  done[i] = !done[i];
+  const btn = document.getElementById('d'+i);
+  const tab = document.querySelector('[data-t="'+i+'"]');
+  const ring = tab.querySelector('.tnum');
+  if (done[i]) {
+    btn.classList.add('done');
+    btn.textContent = 'Módulo concluído! 🎉';
+    tab.classList.add('done');
+    ring.textContent = '✓';
+  } else {
+    btn.classList.remove('done');
+    btn.textContent = 'Marcar módulo como concluído ✓';
+    tab.classList.remove('done');
+    ring.textContent = i+1;
+  }
+  updateGlobal();
+  save();
+}
+
+function toggleStep(header) {
+  const step = header.parentElement;
+  step.classList.toggle('open');
+}
+
+function goTab(i) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('p'+i).classList.add('active');
+  document.querySelector('[data-t="'+i+'"]').classList.add('active');
+  document.querySelector('[data-t="'+i+'"]').scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => goTab(parseInt(t.dataset.t)));
+});
+
+function save() {
+  const checks = {};
+  for (let i = 0; i < N; i++) {
+    const l = document.getElementById('l'+i);
+    if (!l) continue;
+    checks[i] = [...l.querySelectorAll('.ci')].map(el => el.classList.contains('checked'));
+  }
+  try {
+    localStorage.setItem('go-v2-checks', JSON.stringify(checks));
+    localStorage.setItem('go-v2-done', JSON.stringify(done));
+  } catch(e){}
+}
+
+function load() {
+  try {
+    const checks = JSON.parse(localStorage.getItem('go-v2-checks')||'{}');
+    const savedDone = JSON.parse(localStorage.getItem('go-v2-done')||'[]');
+    for (let i = 0; i < N; i++) {
+      const l = document.getElementById('l'+i);
+      if (!l || !checks[i]) continue;
+      [...l.querySelectorAll('.ci')].forEach((el,j) => { if (checks[i][j]) el.classList.add('checked'); });
+      updateBar(i);
+    }
+    savedDone.forEach((v,i) => { if (v) markDone(i); });
+    updateGlobal();
+  } catch(e){}
+}
+
+load();
+</script>
+</body>
+</html>
